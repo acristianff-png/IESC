@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaliação final de IESC III</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--mag:#E5007D;--pur:#5B2C86;--purd:#3D1E5C;--bg:#F7F5FA;--card:#fff;--tx:#2B2038;--mu:#7A7188;--bd:#E7E1EE;--ok:#1F9D55;--r:14px;--sh:0 4px 18px rgba(59,20,90,.08)}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Poppins',sans-serif;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(115deg,var(--mag) 0%,var(--pur) 65%,var(--purd) 100%);color:#fff;padding:22px 20px}
+header h1{margin:0;font-size:20px;font-weight:800}
+header p{margin:4px 0 0;font-size:13px;opacity:.92}
+.wrap{max-width:720px;margin:0 auto;padding:18px 16px 90px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:20px 18px;margin-bottom:18px}
+.card h2{margin:0 0 4px;font-size:17px;color:var(--pur)}
+.card .sub{margin:0 0 16px;color:var(--mu);font-size:13px}
+.badge{display:inline-block;background:var(--pur);color:#fff;border-radius:20px;font-size:11.5px;padding:3px 10px;margin-bottom:8px;font-weight:600}
+.anon{background:#FFF7E6;border:1px solid #F1D9A0;border-radius:10px;padding:10px 12px;font-size:12.5px;margin-bottom:18px}
+.campos{display:grid;gap:10px}
+.campo{display:block;border:2px solid var(--bd);border-radius:12px;padding:12px 14px;cursor:pointer}
+.campo input{display:none}
+.campo b{display:block;font-size:14.5px}
+.campo span{font-size:12.5px;color:var(--mu)}
+.campo:has(input:checked){border-color:var(--mag);background:#FDF0F7}
+.q{margin:0 0 18px}
+.q p{margin:0 0 8px;font-size:14px;line-height:1.45}
+.q .n{color:var(--mag);font-weight:600;margin-right:4px}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.scale label{position:relative}
+.scale input{position:absolute;opacity:0}
+.scale span{display:block;text-align:center;border:2px solid var(--bd);border-radius:10px;padding:9px 0;font-weight:600;font-size:15px;cursor:pointer;background:#fff}
+.scale input:checked+span{background:var(--pur);color:#fff;border-color:var(--pur)}
+.legend{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-top:4px}
+.t{margin:0 0 16px}
+.t label{display:block;font-size:14px;margin-bottom:6px;line-height:1.4}
+textarea{width:100%;min-height:84px;border:2px solid var(--bd);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--mag)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;box-shadow:0 -4px 14px rgba(59,20,90,.08)}
+.bar small{color:var(--mu);font-size:12px}
+button.send{background:linear-gradient(115deg,var(--mag),var(--pur));color:#fff;border:0;border-radius:24px;padding:12px 26px;font-family:inherit;font-weight:600;font-size:14.5px;cursor:pointer}
+button.send:disabled{opacity:.5}
+.msg{text-align:center;padding:40px 20px}
+.msg h2{color:var(--ok);font-size:22px}
+.err{color:#D33A5A;font-size:13px;margin-top:8px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Avaliação final de IESC III</h1>
+  <p>Disciplina, professor, preceptora e campo de estágio · cerca de 8 minutos</p>
+</header>
+<div class="wrap" id="app">
+  <div class="anon"><b>Avaliação anônima.</b> Nenhum nome, e-mail ou login é coletado. A UBS serve apenas para agrupar as respostas do mesmo campo. Responda com sinceridade: o que vocês escrevem orienta as mudanças da próxima turma. As escalas vão de <b>1 (discordo totalmente)</b> a <b>5 (concordo totalmente)</b>.</div>
+
+  <div class="card" id="c-campo">
+    <span class="badge">Antes de começar</span>
+    <h2>Em qual campo de estágio você ficou?</h2>
+    <p class="sub">Escolha a UBS onde você cumpriu o IESC III neste semestre.</p>
+    <div class="campos" id="campos"><p class="sub">Carregando campos…</p></div>
+  </div>
+
+  <div id="blocos"></div>
+</div>
+
+<div class="bar hide" id="bar">
+  <small id="prog">0 de 4 blocos respondidos</small>
+  <button class="send" id="send" disabled>Enviar avaliação</button>
+</div>
+
+<script>
+const SUPABASE_URL="https://baovebzbbakuldnaxcqg.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_tLl96E8cG8vsvY59_gHBVw_yMjQldp_";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+const BLOCOS=[
+ {id:'d',titulo:'1. A disciplina',sub:'Sobre o IESC III como um todo: conteúdos, aulas, atividades e organização.',
+  esc:[],
+  txt:[['bom','Que bom: o que funcionou bem na disciplina?'],['pena','Que pena: o que não funcionou ou ficou a desejar?'],['que_tal','Que tal: o que você sugere mudar ou incluir?'],['levo','O que eu levo desta disciplina para minha formação?']]},
+ {id:'p',titulo:'2. O professor',sub:'Sobre o professor responsável pelas aulas teóricas e pela condução da disciplina.',
+  esc:['Os objetivos da disciplina e os critérios de avaliação foram claros desde o início.',
+       'As aulas eram bem organizadas e o conteúdo era explicado com clareza.',
+       'As metodologias usadas (discussões e atividades em sala) me ajudaram a aprender.',
+       'O professor demonstra domínio do conteúdo e o relaciona com a prática em saúde.',
+       'Eu me sentia à vontade para perguntar, discordar e participar.',
+       'As avaliações foram coerentes com o que foi trabalhado em aula.',
+       'Os retornos dados nas atividades e discussões em sala foram claros e úteis para meu aprendizado.',
+       'O professor foi pontual, respeitoso e cumpriu o combinado.'],
+  txt:[['continuar','O que o professor faz que você gostaria que ele continuasse fazendo?'],['mudar','O que você gostaria que ele parasse ou mudasse?'],['conselho','Um conselho para ele dar à próxima turma.']]},
+ {id:'r',titulo:'3. A preceptora',sub:'Sobre a preceptora que acompanhou você no campo de estágio.',
+  esc:['A preceptora acompanhou e orientou minhas atividades no campo de forma presente.',
+       'Ficaram claras as expectativas e os critérios da avaliação semanal em campo.',
+       'Ela relacionou o que vivemos na UBS com os conteúdos da disciplina.',
+       'Eu me sentia à vontade para perguntar, errar e discordar com ela.',
+       'Tive oportunidades reais de participar ativamente (consulta, visita domiciliar, atividade coletiva).',
+       'Os retornos que recebi sobre meu desempenho foram claros e úteis.',
+       'A preceptora foi pontual, respeitosa e cumpriu o combinado.',
+       'A avaliação semanal foi justa e coerente com o que eu fiz em campo.'],
+  txt:[['continuar','O que a preceptora faz que você gostaria que ela continuasse fazendo?'],['mudar','O que você gostaria que ela parasse ou mudasse?'],['conselho','Um conselho para ela dar à próxima turma.']]},
+ {id:'c',titulo:'4. O campo de estágio (UBS)',sub:'Sobre a unidade, a equipe e as condições de aprendizagem no local.',
+  esc:['A estrutura da UBS (espaço, materiais, local para os alunos) permitiu realizar as atividades.',
+       'Fui bem acolhido(a) pela equipe da unidade (ACS, enfermagem, médicos, recepção).',
+       'O campo ofereceu diversidade de situações de aprendizagem (consulta, visita domiciliar, grupos, território).',
+       'A equipe abriu espaço para os estudantes atuarem e não apenas observarem.',
+       'O deslocamento e a segurança para chegar e circular pelo território foram adequados.',
+       'A UBS me ajudou a compreender o trabalho em equipe e o funcionamento da APS no SUS.'],
+  txt:[['bom','Que bom: o que o campo tem de melhor?'],['pena','Que pena: qual a principal dificuldade do campo?'],['que_tal','Que tal: o que você sugere para melhorar o campo?']]}
+];
+
+let ubs=null;
+const $=s=>document.querySelector(s);
+
+try{ if(localStorage.getItem('aval_iesc3_enviada')){ done(true);} }catch(e){}
+
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+
+async function carregarCampos(){
+  const {data,error}=await sb.rpc('aval_iesc3_campos');
+  const box=$('#campos');
+  if(!box)return;
+  if(error||!data||!data.length){box.innerHTML='<p class="err">Não foi possível carregar os campos. Atualize a página.</p>';return;}
+  box.innerHTML=data.map((c,i)=>`<label class="campo"><input type="radio" name="ubs" value="${esc(c.ubs)}"><b>${esc(c.ubs.replace(' | ',' / '))}</b><span>Preceptora: ${esc(c.preceptoras||'')}</span></label>`).join('');
+  box.querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{ubs=i.value;montar(data.find(c=>c.ubs===ubs));}));
+}
+
+function montar(campo){
+  const nome=campo.preceptoras||'';
+  $('#blocos').innerHTML=BLOCOS.map(b=>{
+    let sub=b.sub;
+    if(b.id==='r')sub+=` Preceptora: <b>${esc(nome)}</b>.`;
+    if(b.id==='c')sub+=` Campo: <b>${esc(campo.ubs.replace(' | ',' / '))}</b>.`;
+    const e=b.esc.map((t,i)=>`<div class="q"><p><span class="n">${i+1}.</span>${esc(t)}</p><div class="scale">${[1,2,3,4,5].map(v=>`<label><input type="radio" name="${b.id}_q${i+1}" value="${v}"><span>${v}</span></label>`).join('')}</div><div class="legend"><span>Discordo totalmente</span><span>Concordo totalmente</span></div></div>`).join('');
+    const t=b.txt.map(([k,l])=>`<div class="t"><label for="${b.id}_${k}">${esc(l)}</label><textarea id="${b.id}_${k}" maxlength="1500"></textarea></div>`).join('');
+    return `<div class="card" data-b="${b.id}"><h2>${b.titulo}</h2><p class="sub">${sub}</p>${e}${t}</div>`;
+  }).join('');
+  $('#bar').classList.remove('hide');
+  $('#blocos').oninput=prog;
+  prog();
+  setTimeout(()=>$('#blocos').scrollIntoView({behavior:'smooth'}),50);
+}
+
+function coletar(){
+  const o={ubs};
+  BLOCOS.forEach(b=>{
+    b.esc.forEach((_,i)=>{const k=`${b.id}_q${i+1}`;const s=document.querySelector(`input[name="${k}"]:checked`);if(s)o[k]=s.value;});
+    b.txt.forEach(([k])=>{const v=document.getElementById(`${b.id}_${k}`).value.trim();if(v)o[`${b.id}_${k}`]=v;});
+  });
+  return o;
+}
+function respondido(o,b){return Object.keys(o).some(k=>k.startsWith(b.id+'_'));}
+function prog(){
+  const o=coletar();const n=BLOCOS.filter(b=>respondido(o,b)).length;
+  $('#prog').textContent=`${n} de 4 blocos respondidos`;
+  $('#send').disabled=n===0;
+}
+
+$('#send').addEventListener('click',async()=>{
+  const btn=$('#send');btn.disabled=true;btn.textContent='Enviando…';
+  const {error}=await sb.rpc('aval_iesc3_enviar',{p:coletar()});
+  if(error){
+    btn.disabled=false;btn.textContent='Enviar avaliação';
+    const m=(error.message||'').includes('encerrada')?'A avaliação já foi encerrada.':'Não foi possível enviar. Verifique a conexão e tente de novo.';
+    let e=$('#err');if(!e){e=document.createElement('div');e.id='err';e.className='err';$('#bar').before(e);}e.textContent=m;return;
+  }
+  try{localStorage.setItem('aval_iesc3_enviada','1');}catch(e){}
+  done(false);
+});
+
+function done(ja){
+  $('#app').innerHTML=`<div class="card msg"><h2>${ja?'Você já enviou sua avaliação':'Avaliação enviada'}</h2><p>${ja?'Neste aparelho já consta um envio. Obrigado!':'Muito obrigado! Suas respostas são anônimas e vão orientar as mudanças da disciplina, da preceptoria e dos campos.'}</p></div>`;
+  $('#bar').classList.add('hide');
+}
+
+carregarCampos();
+</script>
+</body>
+</html>

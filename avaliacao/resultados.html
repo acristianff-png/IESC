@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resultados · Avaliação final de IESC III</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--mag:#E5007D;--pur:#5B2C86;--purd:#3D1E5C;--bg:#F7F5FA;--tx:#2B2038;--mu:#7A7188;--bd:#E7E1EE;--ok:#1F9D55;--r:14px;--sh:0 4px 18px rgba(59,20,90,.08)}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Poppins',sans-serif;background:var(--bg);color:var(--tx)}
+header{background:linear-gradient(115deg,var(--mag),var(--pur) 65%,var(--purd));color:#fff;padding:18px 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:18px;font-weight:800}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 60px}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:16px}
+h2{margin:0 0 10px;font-size:16px;color:var(--pur)}
+input,select,button{font-family:inherit;font-size:14px}
+input[type=password],select{border:2px solid var(--bd);border-radius:10px;padding:9px 12px}
+button{border:0;border-radius:20px;padding:9px 18px;cursor:pointer;background:var(--pur);color:#fff;font-weight:600}
+button.sec{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4)}
+button.dg{background:#D33A5A}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tabs button{background:#fff;color:var(--pur);border:2px solid var(--bd)}
+.tabs button.on{background:var(--pur);color:#fff;border-color:var(--pur)}
+.kpis{display:flex;flex-wrap:wrap;gap:10px}
+.kpi{flex:1;min-width:130px;background:var(--bg);border-radius:12px;padding:10px 12px}
+.kpi b{display:block;font-size:22px;color:var(--pur)}
+.kpi span{font-size:12px;color:var(--mu)}
+.item{margin:0 0 14px}
+.item p{margin:0 0 5px;font-size:13.5px}
+.row{display:flex;align-items:center;gap:10px}
+.avg{font-weight:800;color:var(--pur);min-width:44px}
+.dist{flex:1;display:flex;height:20px;border-radius:6px;overflow:hidden;background:var(--bd)}
+.dist i{display:block;height:100%}
+.dist .d1{background:#D33A5A}.dist .d2{background:#E8895C}.dist .d3{background:#E8C75C}.dist .d4{background:#8AC27A}.dist .d5{background:#1F9D55}
+.nn{font-size:11.5px;color:var(--mu);min-width:48px;text-align:right}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center}
+th:first-child,td:first-child{text-align:left}
+.low{color:#bbb}
+.open h3{font-size:13.5px;margin:14px 0 6px}
+.open li{margin:0 0 6px;font-size:13.5px;line-height:1.45;background:var(--bg);border-radius:8px;padding:8px 10px;list-style:none}
+.open ul{padding:0;margin:0}
+.note{font-size:12px;color:var(--mu)}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Resultados · Avaliação final de IESC III</h1>
+  <div id="hbtns" class="hide"><button class="sec" id="b-ref">Atualizar</button> <button class="sec" id="b-csv">Baixar CSV</button> <button class="sec" id="b-tog"></button></div>
+</header>
+<div class="wrap">
+  <div class="card" id="login"><h2>Acesso do professor</h2><input type="password" id="pw" placeholder="Senha"> <button id="b-go">Entrar</button><p class="note" id="lerr"></p></div>
+  <div id="main" class="hide"></div>
+</div>
+<script>
+const sb=supabase.createClient("https://baovebzbbakuldnaxcqg.supabase.co","sb_publishable_tLl96E8cG8vsvY59_gHBVw_yMjQldp_");
+const MIN=3; // mínimo de respostas para mostrar resultados por UBS
+const B={
+ d:{t:'Disciplina',esc:[],txt:[['bom','Que bom'],['pena','Que pena'],['que_tal','Que tal'],['levo','O que eu levo']]},
+ p:{t:'Professor',esc:['Objetivos e critérios claros','Aulas organizadas e claras','Metodologias ajudaram a aprender','Domínio do conteúdo e relação com a prática','À vontade para perguntar e discordar','Avaliações coerentes com as aulas','Retornos em sala foram úteis','Pontual, respeitoso e cumpriu o combinado'],txt:[['continuar','Continuar'],['mudar','Parar ou mudar'],['conselho','Conselho para a próxima turma']]},
+ r:{t:'Preceptora',esc:['Acompanhou e orientou de forma presente','Expectativas e critérios em campo claros','Relacionou a UBS com os conteúdos','À vontade para perguntar, errar e discordar','Oportunidades reais de participar','Retornos sobre desempenho úteis','Pontual, respeitosa e cumpriu o combinado','Avaliação semanal justa e coerente'],txt:[['continuar','Continuar'],['mudar','Parar ou mudar'],['conselho','Conselho para a próxima turma']]},
+ c:{t:'Campo de estágio',esc:['Estrutura da UBS permitiu as atividades','Acolhimento pela equipe','Diversidade de situações de aprendizagem','Espaço para os estudantes atuarem','Deslocamento e segurança adequados','Compreensão do trabalho em equipe e da APS'],txt:[['bom','Que bom'],['pena','Principal dificuldade'],['que_tal','Que tal (sugestões)']]}
+};
+let senha='',D=null,aba='d',fub='';
+const $=s=>document.querySelector(s);
+const E=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const nm=u=>u.replace(' | ',' / ');
+
+async function carregar(){
+  const {data,error}=await sb.rpc('aval_iesc3_resultados',{p_senha:senha});
+  if(error){$('#lerr').textContent='Senha inválida ou erro de conexão.';return false;}
+  D=data;return true;
+}
+$('#b-go').onclick=async()=>{senha=$('#pw').value;if(await carregar()){$('#login').classList.add('hide');$('#main').classList.remove('hide');$('#hbtns').classList.remove('hide');draw();}};
+$('#pw').onkeydown=e=>{if(e.key==='Enter')$('#b-go').click();};
+$('#b-ref').onclick=async()=>{if(await carregar())draw();};
+$('#b-tog').onclick=async()=>{
+  const novo=!D.aberta;
+  if(!novo&&!confirm('Encerrar o recebimento de respostas? O link do QR code deixará de aceitar envios.'))return;
+  await sb.rpc('aval_iesc3_alternar',{p_senha:senha,p_aberta:novo});await carregar();draw();
+};
+$('#b-csv').onclick=()=>{
+  const rows=D.respostas;if(!rows.length)return;
+  const cols=Object.keys(rows[0]);
+  const q=v=>v==null?'':'"'+String(v).replace(/"/g,'""')+'"';
+  const csv='﻿'+cols.join(';')+'\n'+rows.map(r=>cols.map(c=>q(r[c])).join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='avaliacao_iesc3.csv';a.click();
+};
+
+function stats(rows,k){
+  const v=rows.map(r=>r[k]).filter(x=>x!=null);
+  const c=[0,0,0,0,0,0];v.forEach(x=>c[x]++);
+  return {n:v.length,m:v.length?v.reduce((a,b)=>a+b,0)/v.length:null,c};
+}
+function draw(){
+  $('#b-tog').textContent=D.aberta?'Encerrar respostas':'Reabrir respostas';
+  const R=D.respostas;
+  const por={};R.forEach(r=>por[r.ubs]=(por[r.ubs]||0)+1);
+  let h=`<div class="card"><div class="kpis"><div class="kpi"><b>${R.length}</b><span>respostas</span></div><div class="kpi"><b>${D.aberta?'Aberta':'Encerrada'}</b><span>situação</span></div>`;
+  D.campos.forEach(c=>h+=`<div class="kpi"><b>${por[c.ubs]||0}</b><span>${E(nm(c.ubs))}</span></div>`);
+  h+=`</div><p class="note">Toque em Atualizar para ver respostas novas. Resultados por UBS só aparecem com pelo menos ${MIN} respostas, para proteger o anonimato.</p></div>`;
+  h+=`<div class="tabs">`+Object.keys(B).map(k=>`<button class="${k===aba?'on':''}" data-a="${k}">${B[k].t}</button>`).join('')+`</div>`;
+  h+=bloco(aba);
+  $('#main').innerHTML=h;
+  $('#main').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{aba=b.dataset.a;fub='';draw();});
+  const s=$('#fub');if(s)s.onchange=()=>{fub=s.value;draw();};
+}
+function bloco(k){
+  const b=B[k];let rows=D.respostas;let h='';
+  const porUbs=(k==='r'||k==='c');
+  if(porUbs){
+    h+=`<div class="card"><h2>Comparativo por UBS (média 1 a 5)</h2><table><tr><th>Item</th>`+D.campos.map(c=>`<th>${E(nm(c.ubs).replace('UBS ',''))}</th>`).join('')+`<th>Todas</th></tr>`;
+    b.esc.forEach((t,i)=>{
+      h+=`<tr><td>${i+1}. ${E(t)}</td>`;
+      D.campos.forEach(c=>{const rr=rows.filter(r=>r.ubs===c.ubs);const s=stats(rr,`${k}_q${i+1}`);h+=(rr.length>=MIN&&s.m!=null)?`<td>${s.m.toFixed(1)}</td>`:`<td class="low">–</td>`;});
+      const s=stats(rows,`${k}_q${i+1}`);h+=`<td><b>${s.m!=null?s.m.toFixed(1):'–'}</b></td></tr>`;
+    });
+    h+=`</table></div>`;
+    h+=`<div class="card"><label class="note">Detalhar uma UBS: </label><select id="fub"><option value="">Todas</option>`+D.campos.map(c=>`<option value="${E(c.ubs)}" ${c.ubs===fub?'selected':''}>${E(nm(c.ubs))} (${D.campos.length&&(D.respostas.filter(r=>r.ubs===c.ubs).length)})</option>`).join('')+`</select></div>`;
+    if(fub){
+      rows=rows.filter(r=>r.ubs===fub);
+      if(rows.length<MIN){return h+`<div class="card"><p class="note">Esta UBS tem menos de ${MIN} respostas. Detalhes ocultos para preservar o anonimato (continuam no CSV).</p></div>`;}
+    }
+  }
+  if(b.esc.length){
+    h+=`<div class="card"><h2>${b.t}: escalas${fub?' · '+E(nm(fub)):''}</h2>`;
+    b.esc.forEach((t,i)=>{
+      const s=stats(rows,`${k}_q${i+1}`);const tot=s.n||1;
+      h+=`<div class="item"><p>${i+1}. ${E(t)}</p><div class="row"><span class="avg">${s.m!=null?s.m.toFixed(1):'–'}</span><div class="dist">`+[1,2,3,4,5].map(v=>`<i class="d${v}" style="width:${s.c[v]/tot*100}%" title="${v}: ${s.c[v]}"></i>`).join('')+`</div><span class="nn">n=${s.n}</span></div></div>`;
+    });
+    h+=`<p class="note">Barra: proporção de notas 1 (vermelho) a 5 (verde).</p></div>`;
+  }
+  h+=`<div class="card open"><h2>${b.t}: respostas abertas${fub?' · '+E(nm(fub)):''}</h2>`;
+  b.txt.forEach(([f,l])=>{
+    const L=rows.map(r=>r[`${k}_${f}`]).filter(Boolean);
+    h+=`<h3>${E(l)} (${L.length})</h3><ul>`+L.map(x=>`<li>${E(x)}</li>`).join('')+`</ul>`;
+  });
+  return h+`</div>`;
+}
+</script>
+</body>
+</html>
