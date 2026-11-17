@@ -70,6 +70,7 @@ body{margin:0;font-family:'Poppins',sans-serif;color:#fff;background:linear-grad
   <button id="b-ext">+30 s</button>
   <select id="s-lib"></select><button id="b-lib">Liberar UBS</button>
   <span class="sp"></span>
+  <small id="erro" style="color:#ffb3c1"></small>
   <small>Espaço = avançar · E = +30 s · H = ocultar este painel</small>
   <button class="d" id="b-rst">Reiniciar quiz</button>
 </div>
@@ -88,7 +89,8 @@ async function ctrl(acao,arg){
   try{
     const {data,error}=await sb.rpc('quiz_controle',{p_senha:senha,p_acao:acao,p_arg:arg||null});
     if(error)throw error;apply(data);
-  }catch(e){ if(acao==='ver'){throw e;} }
+    $('#erro').textContent='';
+  }catch(e){ if(acao==='ver'){throw e;} $('#erro').textContent='Erro: '+((e&&e.message)||e)+' (tente de novo)'; }
   finally{ocupado=false;}
 }
 function apply(d){st=d;offset=Date.parse(d.agora)-Date.now();render();}
