@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz final de IESC III · Projeção</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+:root{--mag:#E5007D;--pur:#5B2C86;--purd:#3D1E5C;--ok:#1F9D55;--no:#D33A5A}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:'Poppins',sans-serif;color:#fff;background:linear-gradient(135deg,#2a1442 0%,var(--purd) 45%,#4a1f6e 100%);overflow:hidden}
+#main{height:100vh;padding:2.2vh 3vw 9vh;display:flex;flex-direction:column}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.6vh}
+.top .t{font-weight:800;font-size:clamp(16px,1.8vw,30px)}
+.top .n{font-size:clamp(14px,1.5vw,26px);opacity:.85}
+.timer{font-weight:800;font-size:clamp(28px,4.2vw,72px);min-width:3.2ch;text-align:center;border:.35vw solid #fff;border-radius:50%;width:clamp(70px,8vw,140px);height:clamp(70px,8vw,140px);display:flex;align-items:center;justify-content:center}
+.timer.low{background:var(--no);border-color:var(--no)}
+.enun{font-weight:600;line-height:1.28;text-align:center;margin:1vh auto 2.6vh;max-width:92%}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:1.6vh 1.6vw;flex:1;min-height:0}
+.opt{display:flex;align-items:center;gap:1.4vw;border-radius:1.2vw;padding:1.4vh 1.8vw;font-weight:600;font-size:clamp(18px,2.35vw,42px);line-height:1.2;position:relative}
+.opt .s{font-size:1.15em;width:1.3em;text-align:center;flex:none}
+.o0{background:#E21B3C}.o1{background:#1368CE}.o2{background:#D89E00}.o3{background:#26890C}
+.opt.dim{opacity:.22}
+.opt.certa{outline:.5vw solid #fff;box-shadow:0 0 3vw rgba(255,255,255,.6)}
+.opt .cnt{margin-left:auto;background:rgba(0,0,0,.35);border-radius:2vw;padding:.2em .7em;font-size:.8em;flex:none}
+.chips{display:flex;gap:1vw;justify-content:center;flex-wrap:wrap;margin-top:1.8vh}
+.chip{padding:.7vh 1.2vw;border-radius:2vw;border:.15vw solid rgba(255,255,255,.35);font-size:clamp(12px,1.25vw,22px);background:rgba(255,255,255,.07)}
+.chip.on{background:var(--ok);border-color:var(--ok)}
+.chip.sc{background:rgba(255,255,255,.14)}
+.lobby{flex:1;display:flex;gap:4vw;align-items:center;justify-content:center}
+.lobby h1{font-size:clamp(34px,5vw,88px);margin:0 0 1vh;line-height:1.05}
+.lobby p{font-size:clamp(16px,1.9vw,32px);margin:0 0 1.6vh;opacity:.92}
+.qr{background:#fff;border-radius:1.4vw;padding:1.4vw;width:clamp(220px,28vw,520px)}
+.qr svg{width:100%;height:auto;display:block}
+.teams{display:grid;grid-template-columns:repeat(3,1fr);gap:1vh 1vw;margin-top:2vh}
+.team{padding:1.2vh 1vw;border-radius:1vw;background:rgba(255,255,255,.08);border:.15vw dashed rgba(255,255,255,.35);font-size:clamp(12px,1.35vw,24px)}
+.team.on{background:var(--ok);border:.15vw solid var(--ok);font-weight:600}
+.rank{width:100%;border-collapse:collapse;font-size:clamp(14px,1.7vw,30px)}
+.rank td,.rank th{padding:.9vh 1vw;border-bottom:.1vw solid rgba(255,255,255,.2);text-align:center}
+.rank td:nth-child(2),.rank th:nth-child(2){text-align:left}
+.rank tr.w td{background:rgba(255,255,255,.14);font-weight:800}
+.rank .h1{color:#7CFFA7}.rank .h0{color:#ff8fa3}.rank .hn{opacity:.4}
+.fim{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:1.4vh}
+.fim h1{margin:0;font-size:clamp(28px,3.6vw,64px)}
+.stat{font-size:clamp(14px,1.7vw,30px);opacity:.95}
+.stat b{color:#FFD54F}
+.ctl{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);padding:1.1vh 1.5vw;display:flex;gap:.8vw;align-items:center;flex-wrap:wrap;font-size:13px}
+.ctl button,.ctl select{font-family:inherit;font-size:13px;border-radius:18px;border:0;padding:8px 14px;cursor:pointer}
+.ctl button{background:#fff;color:var(--purd);font-weight:600}
+.ctl button.p{background:var(--mag);color:#fff}
+.ctl button.d{background:var(--no);color:#fff}
+.ctl .sp{flex:1}
+.ctl small{opacity:.8}
+.hide{display:none!important}
+#login{position:fixed;inset:0;background:var(--purd);display:flex;align-items:center;justify-content:center;z-index:9}
+#login div{background:#fff;color:#2B2038;border-radius:16px;padding:28px;width:340px;text-align:center}
+#login input{width:100%;padding:11px;border:2px solid #E7E1EE;border-radius:10px;font-family:inherit;font-size:15px;margin:12px 0}
+#login button{background:var(--pur);color:#fff;border:0;border-radius:20px;padding:10px 24px;font-family:inherit;font-weight:600;cursor:pointer}
+#login p{color:#D33A5A;font-size:13px;margin:8px 0 0}
+</style>
+</head>
+<body>
+<div id="login"><div><b>Quiz de IESC III</b><br><small>Acesso do professor</small><input type="password" id="pw" placeholder="Senha"><button id="go">Entrar</button><p id="le"></p></div></div>
+<div id="main"></div>
+<div class="ctl hide" id="ctl">
+  <button class="p" id="b-main">Iniciar</button>
+  <button id="b-ext">+30 s</button>
+  <select id="s-lib"></select><button id="b-lib">Liberar UBS</button>
+  <span class="sp"></span>
+  <small>Espaço = avançar · E = +30 s · H = ocultar este painel</small>
+  <button class="d" id="b-rst">Reiniciar quiz</button>
+</div>
+
+<script>
+const sb=supabase.createClient("https://baovebzbbakuldnaxcqg.supabase.co","sb_publishable_tLl96E8cG8vsvY59_gHBVw_yMjQldp_");
+const URL_QUIZ=location.href.replace(/tela\.html.*$/,'');
+const SH=['▲','◆','●','■'];
+const $=s=>document.querySelector(s);
+const E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nm=u=>u.replace(' | ',' / ');
+let senha=sessionStorage.getItem('quiz_iesc3_pw')||'',st=null,offset=0,ocupado=false,libSig='';
+
+async function ctrl(acao,arg){
+  if(ocupado)return;ocupado=true;
+  try{
+    const {data,error}=await sb.rpc('quiz_controle',{p_senha:senha,p_acao:acao,p_arg:arg||null});
+    if(error)throw error;apply(data);
+  }catch(e){ if(acao==='ver'){throw e;} }
+  finally{ocupado=false;}
+}
+function apply(d){st=d;offset=Date.parse(d.agora)-Date.now();render();}
+async function poll(){
+  try{const {data,error}=await sb.rpc('quiz_publico');if(!error&&data)apply(data);}catch(e){}
+}
+function restante(){
+  if(!st||!st.inicio_em)return 0;
+  return Math.max(0,(Date.parse(st.inicio_em)+st.duracao_s*1000-(Date.now()+offset))/1000);
+}
+function rank(){return [...st.equipes].sort((a,b)=>b.acertos-a.acertos||((a.tempo??9e9)-(b.tempo??9e9)));}
+
+function fs(t){const n=t.length;return n>150?'clamp(18px,2.2vw,40px)':n>90?'clamp(20px,2.7vw,48px)':'clamp(24px,3.4vw,62px)';}
+
+function render(){
+  const m=$('#main');
+  const top=(extra)=>`<div class="top"><div class="t">IESC III · Quiz final</div><div class="n">${st.fase==='lobby'?'':`Pergunta ${st.q_atual} de ${st.total}`}</div>${extra||'<div></div>'}</div>`;
+  const chips=(f)=>`<div class="chips">`+st.equipes.map(e=>f(e)).join('')+`</div>`;
+  if(st.fase==='lobby'){
+    m.innerHTML=`<div class="lobby"><div><h1>Quiz final<br>de IESC III</h1><p>Escaneie o QR code e escolha a sua UBS.<br><b>Um celular por UBS.</b></p>
+      <div class="teams">`+st.equipes.map(e=>`<div class="team ${e.conectada?'on':''}">${E(nm(e.ubs))}${e.conectada?' ✓':''}</div>`).join('')+`</div></div><div class="qr" id="qr"></div></div>`;
+    try{const q=qrcode(0,'M');q.addData(URL_QUIZ);q.make();$('#qr').innerHTML=q.createSvgTag({cellSize:6,margin:0,scalable:true});}catch(e){$('#qr').innerHTML='<p style="color:#000;font-size:14px">'+E(URL_QUIZ)+'</p>';}
+  }else if(st.fase==='pergunta'||st.fase==='revelada'){
+    const p=st.pergunta,rev=st.fase==='revelada';
+    const cont=[0,0,0,0];if(rev)st.equipes.forEach(e=>{if(e.escolha!=null)cont[e.escolha]++;});
+    m.innerHTML=top(`<div class="timer" id="tm">${rev?'✔':Math.ceil(restante())}</div>`)+
+      `<div class="enun" style="font-size:${fs(p.enunciado)}">${E(p.enunciado)}</div><div class="opts">`+
+      p.opcoes.map((o,i)=>`<div class="opt o${i} ${rev?(i===st.correta?'certa':'dim'):''}"><span class="s">${SH[i]}</span><span>${E(o)}</span>${rev?`<span class="cnt">${cont[i]}</span>`:''}</div>`).join('')+`</div>`+
+      (rev?chips(e=>`<div class="chip sc">${E(nm(e.ubs).replace('UBS ',''))}: <b>${e.acertos}</b></div>`):chips(e=>`<div class="chip ${e.respondeu?'on':''}">${E(nm(e.ubs).replace('UBS ',''))} ${e.respondeu?'✓':'…'}</div>`));
+  }else{
+    const r=rank(),ps=st.perguntas_fim||[];
+    const dif=r.reduce((s,e)=>s+(e.hist||[]).slice(1).filter(x=>x===1).length,0);
+    const totDif=st.equipes.length*(ps.length-1);
+    const top1=r[0],emp=r.length>1&&r[1].acertos===top1.acertos&&Math.abs((r[1].tempo??9e9)-(top1.tempo??9e9))<0.001;
+    const col=(i)=>st.equipes.filter(e=>(e.hist||[])[i]===1).length;
+    m.innerHTML=`<div class="fim"><h1>${emp?'Empate!':'🏆 '+E(nm(top1.ubs))}</h1>
+      <div class="stat">Acertos nas perguntas 2 a ${ps.length}: <b>${dif} de ${totDif}</b> (${totDif?Math.round(dif/totDif*100):0}%) · A pergunta 1 foi acertada por <b>${col(0)} de ${st.equipes.length}</b> equipes</div>
+      <table class="rank"><tr><th>#</th><th>Equipe</th>`+ps.map(p=>`<th>${p.ordem}</th>`).join('')+`<th>Total</th></tr>`+
+      r.map((e,i)=>`<tr class="${i===0&&!emp?'w':''}"><td>${i+1}</td><td>${E(nm(e.ubs))}</td>`+(e.hist||[]).map(h=>`<td class="${h===1?'h1':h===0?'h0':'hn'}">${h===1?'✓':h===0?'✗':'–'}</td>`).join('')+`<td><b>${e.acertos}</b></td></tr>`).join('')+
+      `<tr><td></td><td style="opacity:.8">Equipes que acertaram</td>`+ps.map((p,i)=>`<td>${col(i)}</td>`).join('')+`<td></td></tr></table></div>`;
+  }
+  const b=$('#b-main');
+  b.textContent=st.fase==='lobby'?'Iniciar':st.fase==='pergunta'?'Revelar resposta':st.fase==='revelada'?(st.q_atual<st.total?'Próxima pergunta':'Ver resultado final'):'Fim';
+  b.disabled=st.fase==='fim';
+  $('#b-ext').classList.toggle('hide',st.fase!=='pergunta');
+  const sig=st.equipes.filter(e=>e.conectada).map(e=>e.ubs).join('|');
+  if(sig!==libSig){libSig=sig;$('#s-lib').innerHTML='<option value="">Liberar UBS…</option>'+st.equipes.filter(e=>e.conectada).map(e=>`<option value="${E(e.ubs)}">${E(nm(e.ubs))}</option>`).join('');}
+  tick();
+}
+function tick(){
+  const t=$('#tm');if(t&&st&&st.fase==='pergunta'){const r=restante();t.textContent=Math.ceil(r);t.classList.toggle('low',r<=10);}
+}
+function avancar(){
+  if(!st)return;
+  if(st.fase==='lobby')ctrl('iniciar');
+  else if(st.fase==='pergunta')ctrl('revelar');
+  else if(st.fase==='revelada')ctrl('proxima');
+}
+$('#b-main').onclick=avancar;
+$('#b-ext').onclick=()=>ctrl('estender');
+$('#b-lib').onclick=()=>{const v=$('#s-lib').value;if(v)ctrl('liberar',v);};
+$('#b-rst').onclick=()=>{if(confirm('Reiniciar o quiz? Todas as respostas e equipes serão apagadas.'))ctrl('resetar');};
+document.addEventListener('keydown',e=>{
+  if($('#login').classList.contains('hide')===false)return;
+  if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;
+  if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();avancar();}
+  else if(e.key==='e'||e.key==='E')ctrl('estender');
+  else if(e.key==='h'||e.key==='H')$('#ctl').classList.toggle('hide');
+});
+async function entrar(){
+  senha=$('#pw').value||senha;
+  try{await ctrl('ver');$('#login').classList.add('hide');$('#ctl').classList.remove('hide');sessionStorage.setItem('quiz_iesc3_pw',senha);setInterval(poll,1200);setInterval(tick,250);}
+  catch(e){$('#le').textContent='Senha inválida ou sem conexão.';}
+}
+$('#go').onclick=entrar;$('#pw').onkeydown=e=>{if(e.key==='Enter')entrar();};
+if(senha)entrar();
+</script>
+</body>
+</html>
