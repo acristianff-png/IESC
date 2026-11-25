@@ -141,6 +141,27 @@
   .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;}
   .muted{color:var(--afya-muted); font-size:12.5px;}
   .hidden{display:none !important;}
+  /* ---- Relatórios consolidados (mapa de frequência / quadro de notas) ---- */
+  .visao-toggle{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .visao-toggle .btn-sm.active{background:linear-gradient(115deg, var(--afya-magenta), var(--afya-purple)); color:#fff; border-color:transparent;}
+  .mapa-wrap{overflow-x:auto; margin-bottom:8px;}
+  .mapa-titulo{margin:18px 0 8px; font-size:14px; font-weight:700; color:var(--afya-purple);}
+  .mapa-titulo small{font-weight:500; color:var(--afya-muted); margin-left:6px;}
+  table.mapa{font-size:12px; width:auto; min-width:100%; border:1px solid var(--afya-border);}
+  table.mapa th, table.mapa td{padding:6px 7px; border:1px solid var(--afya-border); white-space:nowrap;}
+  table.mapa th.c, table.mapa td.c{text-align:center; padding:6px 4px; min-width:38px;}
+  table.mapa td.nome, table.mapa th.nome{position:sticky; left:0; background:#fff; z-index:1; min-width:230px; max-width:280px; overflow:hidden; text-overflow:ellipsis; box-shadow:2px 0 0 var(--afya-border);}
+  table.mapa tr:hover td.nome{background:#faf8fc;}
+  table.mapa tr.grupo td{background:var(--afya-bg); font-weight:700; font-size:11.5px; color:var(--afya-purple); position:static;}
+  table.mapa td.vazia{color:#cfc8d9;}
+  table.mapa td.cel-p{color:var(--afya-success); font-weight:700;}
+  table.mapa td.cel-f{background:rgba(211,58,90,.13); color:var(--afya-danger); font-weight:800;}
+  table.mapa td.cel-j{background:rgba(201,134,43,.16); color:var(--afya-warn); font-weight:800;}
+  table.mapa td.cel-rem{box-shadow:inset 0 0 0 2px rgba(91,44,134,.35);}
+  table.mapa td.tot, table.mapa th.tot{background:#fbf9fd; font-weight:700; text-align:center;}
+  table.mapa td.tot.baixa{color:var(--afya-danger);}
+  table.mapa td.tot.ok{color:var(--afya-success);}
+  .mapa-legenda{font-size:11.5px; color:var(--afya-muted); margin:6px 0 0;}
   .presenca-opts{display:flex; gap:6px;}
   .presenca-opts button{
     flex:1; padding:7px 8px; border-radius:8px; border:1.5px solid var(--afya-border); background:#fff;
@@ -335,13 +356,20 @@
       <div id="coord-tab-avaliacoes" class="tab-panel active">
         <div class="card">
           <div class="toolbar">
-            <h2 style="margin:0;">Avaliações</h2>
-            <button class="btn-sm" id="btn-coord-export-avaliacoes">Exportar CSV</button>
+            <h2 style="margin:0;">Notas</h2>
+            <button class="btn-sm" id="btn-coord-export-avaliacoes">CSV detalhado</button>
           </div>
           <div class="filters">
             <select id="coord-filtro-modulo"><option value="">Todos os meus módulos</option></select>
             <select id="coord-filtro-preceptora"><option value="">Todas as preceptoras</option></select>
           </div>
+          <div class="visao-toggle" data-alvo="coord-avaliacoes">
+            <button type="button" class="btn-sm active" data-visao="cons">Consolidado por aluno</button>
+            <button type="button" class="btn-sm" data-visao="det">Detalhado por data</button>
+            <button type="button" class="btn-sm" data-csv-cons="coord-avaliacoes">CSV consolidado</button>
+          </div>
+          <div id="cons-coord-avaliacoes" class="mapa-wrap"></div>
+          <div id="det-coord-avaliacoes" style="display:none;">
           <table id="tbl-coord-avaliacoes">
             <thead><tr>
               <th>Módulo</th><th>UBS</th><th>Preceptora</th><th>Aluno</th><th>Data</th>
@@ -349,19 +377,28 @@
             </tr></thead>
             <tbody></tbody>
           </table>
+          </div>
         </div>
       </div>
 
       <div id="coord-tab-presencas" class="tab-panel">
         <div class="card">
           <div class="toolbar">
-            <h2 style="margin:0;">Presenças</h2>
-            <button class="btn-sm" id="btn-coord-export-presencas">Exportar CSV</button>
+            <h2 style="margin:0;">Mapa de frequência</h2>
+            <button class="btn-sm" id="btn-coord-export-presencas">CSV detalhado</button>
           </div>
+          <div class="visao-toggle" data-alvo="coord-presencas">
+            <button type="button" class="btn-sm active" data-visao="cons">Consolidado por aluno</button>
+            <button type="button" class="btn-sm" data-visao="det">Detalhado por data (alterar datas)</button>
+            <button type="button" class="btn-sm" data-csv-cons="coord-presencas">CSV consolidado</button>
+          </div>
+          <div id="cons-coord-presencas" class="mapa-wrap"></div>
+          <div id="det-coord-presencas" style="display:none;">
           <table id="tbl-coord-presencas">
             <thead><tr><th>Módulo</th><th>UBS</th><th>Preceptora</th><th>Aluno</th><th>Turma</th><th>Data</th><th>Status</th><th>Observação</th><th>Alterar data</th></tr></thead>
             <tbody></tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -422,18 +459,26 @@
       <div id="tab-presencas" class="tab-panel">
         <div class="card">
           <div class="toolbar">
-            <h2 style="margin:0;">Presenças consolidadas</h2>
-            <button class="btn-sm" id="btn-export-presencas-csv">Exportar CSV</button>
+            <h2 style="margin:0;">Mapa de frequência</h2>
+            <button class="btn-sm" id="btn-export-presencas-csv">CSV detalhado</button>
           </div>
           <div class="filters">
             <select id="filtro-presenca-ubs"><option value="">Todas as UBS</option></select>
             <select id="filtro-presenca-preceptora"><option value="">Todas as preceptoras</option></select>
             <select id="filtro-presenca-modulo"><option value="">Todos os módulos</option></select>
           </div>
+          <div class="visao-toggle" data-alvo="admin-presencas">
+            <button type="button" class="btn-sm active" data-visao="cons">Consolidado por aluno</button>
+            <button type="button" class="btn-sm" data-visao="det">Detalhado por data (alterar datas)</button>
+            <button type="button" class="btn-sm" data-csv-cons="admin-presencas">CSV consolidado</button>
+          </div>
+          <div id="cons-admin-presencas" class="mapa-wrap"></div>
+          <div id="det-admin-presencas" style="display:none;">
           <table id="tbl-admin-presencas">
             <thead><tr><th>Módulo</th><th>UBS</th><th>Preceptora</th><th>Aluno</th><th>Turma</th><th>Data</th><th>Status</th><th>Observação</th><th>Alterar data</th></tr></thead>
             <tbody></tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -441,14 +486,21 @@
       <div id="tab-avaliacoes" class="tab-panel active">
         <div class="card">
           <div class="toolbar">
-            <h2 style="margin:0;">Avaliações consolidadas</h2>
-            <button class="btn-sm" id="btn-export-csv">Exportar CSV</button>
+            <h2 style="margin:0;">Notas</h2>
+            <button class="btn-sm" id="btn-export-csv">CSV detalhado</button>
           </div>
           <div class="filters">
             <select id="filtro-ubs"><option value="">Todas as UBS</option></select>
             <select id="filtro-preceptora"><option value="">Todas as preceptoras</option></select>
             <select id="filtro-modulo"><option value="">Todos os módulos</option></select>
           </div>
+          <div class="visao-toggle" data-alvo="admin-avaliacoes">
+            <button type="button" class="btn-sm active" data-visao="cons">Consolidado por aluno</button>
+            <button type="button" class="btn-sm" data-visao="det">Detalhado por data (ajustar notas)</button>
+            <button type="button" class="btn-sm" data-csv-cons="admin-avaliacoes">CSV consolidado</button>
+          </div>
+          <div id="cons-admin-avaliacoes" class="mapa-wrap"></div>
+          <div id="det-admin-avaliacoes" style="display:none;">
           <table id="tbl-admin-avaliacoes">
             <thead><tr>
               <th>Módulo</th><th>UBS</th><th>Preceptora</th><th>Aluno</th><th>Data</th>
@@ -456,6 +508,7 @@
             </tr></thead>
             <tbody></tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -1101,6 +1154,8 @@ async function loadCoordAvaliacoes(){
   const fPrec = selPrec.value;
   const filtered = doMeusModulos.filter(a => (!fMod || a.alunos?.modulo === fMod) && (!fPrec || a.preceptoras?.nome === fPrec));
   window.__COORD_AVALIACOES__ = filtered;
+  renderConsolidado('coord-avaliacoes', 'nota', doMeusModulos, a =>
+    MEUS_MODULOS_COORD.includes(a.modulo) && (!fMod || a.modulo === fMod) && (!fPrec || a.preceptoras?.nome === fPrec));
 
   document.querySelector('#tbl-coord-avaliacoes tbody').innerHTML = filtered.map(a=>`
     <tr>
@@ -1174,6 +1229,7 @@ async function loadCoordPresencas(){
 
   const filtered = (data||[]).filter(p => MEUS_MODULOS_COORD.includes(p.alunos?.modulo));
   window.__COORD_PRESENCAS__ = filtered;
+  renderConsolidado('coord-presencas', 'presenca', filtered, a => MEUS_MODULOS_COORD.includes(a.modulo));
 
   document.querySelector('#tbl-coord-presencas tbody').innerHTML = filtered.map(p=>`
     <tr>
@@ -1355,6 +1411,8 @@ async function loadAdminPresencas(){
     (!fMod || a.alunos?.modulo === fMod)
   );
   window.__ADMIN_PRESENCAS__ = filtered;
+  renderConsolidado('admin-presencas', 'presenca', data || [], a =>
+    (!fUbs || a.ubs === fUbs) && (!fPrec || a.preceptoras?.nome === fPrec) && (!fMod || a.modulo === fMod));
 
   const tbody = document.querySelector('#tbl-admin-presencas tbody');
   tbody.innerHTML = filtered.map(p=>`
@@ -1421,6 +1479,232 @@ async function salvarRubricas(){
   renderRubricasAdmin();
 }
 
+/* ============================================================
+   RELATÓRIOS CONSOLIDADOS — uma linha por aluno, uma coluna por data
+   (modelo do "Mapa de Frequência" do Diário de Classe da UFMG)
+   ============================================================ */
+const LIMITE_FREQ = 75; // % mínimo de frequência (Freq. S/N)
+
+function escHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function brData(d){ return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); }
+function brDataCurta(d){ return d.slice(8,10) + '/' + d.slice(5,7); }
+function nomePrecAluno(a){ return a.preceptoras?.nome || '—'; }
+
+// alunos: já filtrados. registros: presenças OU avaliações (têm aluno_id e data_visita).
+// Devolve um bloco por módulo: { modulo, datas:[...ordenadas], linhas:[{aluno, regs:Map(data→registro)}] }
+function consolidarPorModulo(alunos, registros){
+  const porAluno = new Map();
+  registros.forEach(r=>{
+    if(!porAluno.has(r.aluno_id)) porAluno.set(r.aluno_id, new Map());
+    porAluno.get(r.aluno_id).set(r.data_visita, r);
+  });
+  const blocos = new Map();
+  alunos.forEach(a=>{
+    const regs = porAluno.get(a.id) || new Map();
+    if(a.ativo === false && !regs.size) return;   // inativo sem histórico não aparece
+    if(!blocos.has(a.modulo)) blocos.set(a.modulo, { modulo:a.modulo, datas:new Set(), linhas:[] });
+    const b = blocos.get(a.modulo);
+    regs.forEach((_, d) => b.datas.add(d));
+    b.linhas.push({ aluno:a, regs });
+  });
+  const cmp = (x,y) => String(x||'').localeCompare(String(y||''), 'pt-BR');
+  return MODULOS_ORDEM.filter(m => blocos.has(m)).map(m=>{
+    const b = blocos.get(m);
+    b.datas = [...b.datas].sort();
+    b.linhas.sort((x,y) => cmp(x.aluno.ubs,y.aluno.ubs) || cmp(nomePrecAluno(x.aluno),nomePrecAluno(y.aluno)) || cmp(x.aluno.nome,y.aluno.nome));
+    return b;
+  });
+}
+
+// Faltas = ausente + justificado (como no diário da UFMG); "Just." mostra quantas das faltas foram justificadas.
+function estatPresenca(regs){
+  let faltas = 0, just = 0, pres = 0;
+  regs.forEach(r=>{
+    if(r.status === 'presente') pres++;
+    else { faltas++; if(r.status === 'justificado') just++; }
+  });
+  const aulas = regs.size;
+  const freq = aulas ? Math.round(((aulas - faltas) / aulas) * 100) : null;
+  return { aulas, faltas, just, pres, freq };
+}
+
+function estatNotas(regs){
+  const arr = [...regs.values()];
+  const n = arr.length;
+  if(!n) return { n:0 };
+  const soma = k => arr.reduce((s,r) => s + Number(r[k]), 0);
+  return { n, assid: soma('assiduidade_pontos')/n, conh: soma('conhecimentos_pontos')/n,
+           post: soma('postura_pontos')/n, media: soma('nota_total')/n, soma: soma('nota_total') };
+}
+
+const SIGLA_PRES = { presente:'P', ausente:'F', justificado:'J' };
+const CLASSE_PRES = { presente:'cel-p', ausente:'cel-f', justificado:'cel-j' };
+
+function htmlMapaFrequencia(blocos){
+  if(!blocos.length) return '<p class="muted">Nenhum aluno encontrado para os filtros selecionados.</p>';
+  return blocos.map(b=>{
+    const nCols = 2 + b.datas.length + 5;
+    const cab = b.datas.map(d => `<th class="c" title="${brData(d)}">${brDataCurta(d)}</th>`).join('');
+    let ultimo = null;
+    const corpo = b.linhas.map(l=>{
+      const chave = (l.aluno.ubs || '') + '|' + nomePrecAluno(l.aluno);
+      let grupo = '';
+      if(chave !== ultimo){
+        ultimo = chave;
+        grupo = `<tr class="grupo"><td colspan="${nCols}">${escHtml(l.aluno.ubs || 'Sem UBS')} — ${escHtml(nomePrecAluno(l.aluno))}</td></tr>`;
+      }
+      const e = estatPresenca(l.regs);
+      const cels = b.datas.map(d=>{
+        const r = l.regs.get(d);
+        if(!r) return '<td class="c vazia">·</td>';
+        const g = l.aluno.grupo, esp = grupoParaData(d, b.modulo);
+        const rem = (g && esp && esp !== g);
+        const tip = `${brData(d)} — ${STATUS_LABEL[r.status]}${rem ? ' (turma remanejada)' : ''}${r.observacao ? ': ' + r.observacao : ''}`;
+        return `<td class="c ${CLASSE_PRES[r.status]}${rem ? ' cel-rem' : ''}" title="${escHtml(tip)}">${SIGLA_PRES[r.status]}</td>`;
+      }).join('');
+      const baixa = e.freq !== null && e.freq < LIMITE_FREQ;
+      return grupo + `<tr>
+        <td class="nome" title="${escHtml(l.aluno.nome)}">${escHtml(l.aluno.nome)}</td>
+        <td class="c">${l.aluno.grupo || '—'}</td>
+        ${cels}
+        <td class="tot">${e.aulas}</td>
+        <td class="tot ${e.faltas ? 'baixa' : ''}">${e.faltas}</td>
+        <td class="tot">${e.just}</td>
+        <td class="tot ${e.freq === null ? '' : (baixa ? 'baixa' : 'ok')}">${e.freq === null ? '—' : e.freq + '%'}</td>
+        <td class="tot ${e.freq === null ? '' : (baixa ? 'baixa' : 'ok')}">${e.freq === null ? '—' : (baixa ? 'N' : 'S')}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mapa-titulo">${escHtml(b.modulo)}<small>${b.linhas.length} alunos · ${b.datas.length} datas com chamada</small></div>
+      <table class="mapa">
+        <thead><tr>
+          <th class="nome">Aluno</th><th class="c">Turma</th>${cab}
+          <th class="tot" title="Aulas com chamada lançada">Aulas</th>
+          <th class="tot" title="Ausências + justificadas">Total faltas</th>
+          <th class="tot" title="Faltas justificadas (já incluídas no total)">Just.</th>
+          <th class="tot" title="(Aulas − faltas) ÷ aulas">Freq. %</th>
+          <th class="tot" title="S = frequência ≥ ${LIMITE_FREQ}%">Freq. S/N</th>
+        </tr></thead>
+        <tbody>${corpo}</tbody>
+      </table>
+      <p class="mapa-legenda">P = presente · F = falta · J = falta justificada · · = sem chamada nessa data (turma alternada) · borda roxa = turma remanejada · S/N: frequência ≥ ${LIMITE_FREQ}%</p>`;
+  }).join('');
+}
+
+function htmlQuadroNotas(blocos){
+  if(!blocos.length) return '<p class="muted">Nenhum aluno encontrado para os filtros selecionados.</p>';
+  return blocos.map(b=>{
+    const nCols = 1 + b.datas.length + 6;
+    const cab = b.datas.map(d => `<th class="c" title="${brData(d)}">${brDataCurta(d)}</th>`).join('');
+    let ultimo = null;
+    const corpo = b.linhas.map(l=>{
+      const chave = (l.aluno.ubs || '') + '|' + nomePrecAluno(l.aluno);
+      let grupo = '';
+      if(chave !== ultimo){
+        ultimo = chave;
+        grupo = `<tr class="grupo"><td colspan="${nCols}">${escHtml(l.aluno.ubs || 'Sem UBS')} — ${escHtml(nomePrecAluno(l.aluno))}</td></tr>`;
+      }
+      const e = estatNotas(l.regs);
+      const cels = b.datas.map(d=>{
+        const r = l.regs.get(d);
+        if(!r) return '<td class="c vazia">·</td>';
+        const tip = `${brData(d)} — Assiduidade ${fmt(r.assiduidade_pontos)} · Conhecimentos ${fmt(r.conhecimentos_pontos)} · Postura ${fmt(r.postura_pontos)}`;
+        return `<td class="c cel-p" style="color:inherit" title="${escHtml(tip)}">${fmt(r.nota_total)}</td>`;
+      }).join('');
+      const f = v => e.n ? fmt(v) : '—';
+      return grupo + `<tr>
+        <td class="nome" title="${escHtml(l.aluno.nome)}">${escHtml(l.aluno.nome)}</td>
+        ${cels}
+        <td class="tot">${e.n}</td>
+        <td class="tot">${f(e.assid)}</td>
+        <td class="tot">${f(e.conh)}</td>
+        <td class="tot">${f(e.post)}</td>
+        <td class="tot ok">${f(e.media)}</td>
+        <td class="tot">${f(e.soma)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mapa-titulo">${escHtml(b.modulo)}<small>${b.linhas.length} alunos · ${b.datas.length} datas com avaliação</small></div>
+      <table class="mapa">
+        <thead><tr>
+          <th class="nome">Aluno</th>${cab}
+          <th class="tot" title="Avaliações lançadas">Aval.</th>
+          <th class="tot" title="Média de Assiduidade">Assid.</th>
+          <th class="tot" title="Média de Conhecimentos e Habilidades">Conh.</th>
+          <th class="tot" title="Média de Postura e Colaboração">Postura</th>
+          <th class="tot" title="Média das notas totais">Média</th>
+          <th class="tot" title="Soma das notas totais">Soma</th>
+        </tr></thead>
+        <tbody>${corpo}</tbody>
+      </table>
+      <p class="mapa-legenda">Cada coluna de data mostra a nota total da visita (passe o mouse para ver o detalhe por critério). · = sem avaliação nessa data. Assid./Conh./Postura/Média são médias das visitas avaliadas; Soma é a soma das notas totais.</p>`;
+  }).join('');
+}
+
+// alvo: 'admin-presencas' | 'coord-presencas' | 'admin-avaliacoes' | 'coord-avaliacoes'
+async function renderConsolidado(alvo, tipo, registros, predicadoAluno){
+  const host = document.getElementById('cons-' + alvo);
+  if(!host) return;
+  const { data: alunos, error } = await sb.from('alunos')
+    .select('id, nome, ubs, modulo, grupo, ativo, preceptoras(nome)');
+  if(error){ host.innerHTML = '<p class="muted">Erro ao carregar alunos: ' + escHtml(error.message) + '</p>'; return; }
+  const sel = (alunos || []).filter(predicadoAluno);
+  const ids = new Set(sel.map(a => a.id));
+  const blocos = consolidarPorModulo(sel, (registros || []).filter(r => ids.has(r.aluno_id)));
+  window.__CONS__ = window.__CONS__ || {};
+  window.__CONS__[alvo] = { tipo, blocos };
+  host.innerHTML = tipo === 'presenca' ? htmlMapaFrequencia(blocos) : htmlQuadroNotas(blocos);
+}
+
+function exportarConsolidadoCSV(alvo){
+  const c = (window.__CONS__ || {})[alvo];
+  if(!c || !c.blocos.length){ toast("Nada para exportar.", true); return; }
+  const linhas = [];
+  c.blocos.forEach((b, i)=>{
+    if(i > 0) linhas.push('');
+    if(c.tipo === 'presenca'){
+      linhas.push(['Módulo','UBS','Preceptora','Aluno','Turma', ...b.datas.map(brData),
+        'Aulas','Total faltas','Justificadas','Frequência (%)','Freq. S/N'].join(';'));
+      b.linhas.forEach(l=>{
+        const e = estatPresenca(l.regs);
+        linhas.push([b.modulo, l.aluno.ubs, nomePrecAluno(l.aluno), l.aluno.nome, l.aluno.grupo || '',
+          ...b.datas.map(d => l.regs.has(d) ? SIGLA_PRES[l.regs.get(d).status] : ''),
+          e.aulas, e.faltas, e.just,
+          e.freq === null ? '' : e.freq,
+          e.freq === null ? '' : (e.freq < LIMITE_FREQ ? 'N' : 'S')].join(';'));
+      });
+    } else {
+      linhas.push(['Módulo','UBS','Preceptora','Aluno', ...b.datas.map(brData),
+        'Avaliações','Assiduidade (média)','Conhecimentos (média)','Postura (média)','Média','Soma'].join(';'));
+      b.linhas.forEach(l=>{
+        const e = estatNotas(l.regs);
+        const f = v => e.n ? fmt(v) : '';
+        linhas.push([b.modulo, l.aluno.ubs, nomePrecAluno(l.aluno), l.aluno.nome,
+          ...b.datas.map(d => l.regs.has(d) ? fmt(l.regs.get(d).nota_total) : ''),
+          e.n, f(e.assid), f(e.conh), f(e.post), f(e.media), f(e.soma)].join(';'));
+      });
+    }
+  });
+  const blob = new Blob(["﻿" + linhas.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${c.tipo === 'presenca' ? 'mapa_frequencia' : 'quadro_notas'}_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+}
+
+// alternância Consolidado / Detalhado + CSV consolidado (delegação: vale para as 4 abas)
+document.addEventListener('click', ev=>{
+  const b = ev.target.closest('.visao-toggle button');
+  if(!b) return;
+  const box = b.closest('.visao-toggle');
+  const alvo = box.dataset.alvo;
+  if(b.dataset.csvCons){ exportarConsolidadoCSV(alvo); return; }
+  box.querySelectorAll('button[data-visao]').forEach(x => x.classList.toggle('active', x === b));
+  document.getElementById('cons-' + alvo).style.display = b.dataset.visao === 'cons' ? '' : 'none';
+  document.getElementById('det-' + alvo).style.display = b.dataset.visao === 'det' ? '' : 'none';
+});
+
 async function loadAdminAvaliacoes(){
   let query = sb.from('avaliacoes')
     .select('*, alunos(nome, ubs, modulo), preceptoras(nome, ubs, email)')
@@ -1446,6 +1730,8 @@ async function loadAdminAvaliacoes(){
   );
 
   window.__ADMIN_AVALIACOES__ = filtered;
+  renderConsolidado('admin-avaliacoes', 'nota', data || [], a =>
+    (!fUbs || a.ubs === fUbs) && (!fPrec || a.preceptoras?.nome === fPrec) && (!fMod || a.modulo === fMod));
 
   const tbody = document.querySelector('#tbl-admin-avaliacoes tbody');
   tbody.innerHTML = filtered.map(a=>`
